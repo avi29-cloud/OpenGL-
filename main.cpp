@@ -2,7 +2,15 @@
 #include <stdio.h>
 
 static void RenderSceneCB(){
+    static GLclampf c = 1.0f;
+    glClearColor(c*7,c*2,c*4,c);
+
+    c-= 1.0f/256.0f;
+    if (c <=-5.0f){
+        c =0.0f;
+    }
     glClear(GL_COLOR_BUFFER_BIT);
+    glutPostRedisplay();
     glutSwapBuffers();
 }
 
@@ -22,7 +30,7 @@ int main (int argc , char** argv)
     int win = glutCreateWindow("First Window");
     printf("window id: %d\n",win);
 
-    GLclampf Red =0.0f, Green =0.0f , Blue =1.0f , Alpha= 0.0f;
+    GLclampf Red =0.0f, Green =0.0f , Blue =0.0f , Alpha= 0.0f;
     glClearColor(Red, Green , Blue , Alpha);
 
     glutDisplayFunc(RenderSceneCB);//render callback
