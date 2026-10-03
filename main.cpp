@@ -1,68 +1,68 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <iostream>
 
-// Callback function to resize the viewport when the window size changes
-void framebuffer_size_callback(GLFWwindow* window , int width ,int height){
-    glViewport(0,0,width, height);
-}
-int main(){
-    if(!glfwInit()){
-        std::cerr <<"failed to Initialize GLFW"<<std::endl;
-        return -1;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR , 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR , 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE ,GLFW_OPENGL_CORE_PROFILE);
+#include <stdio.h>
+#include <GL/glew.h>
+#include <GL/freeglut.h>
+#include <vector.h>
 
+GLuint VBO;
 
-    //Create window object 
-    GLFWwindow* window = glfwCreateWindow(800,600,"My first OpenGL Window ",NULL,NULL);//parameters
-
-    if (window == NULL){
-        std::cerr <<"failed to create GLFW window"<<std::endl;
-        glfwTerminate();
-        return -1;
-
-    }    
-
-    glfwMakeContextCurrent(window);//create a context of our window
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-        std::cerr <<"failed to initialize glad"<<std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glViewport(0,0,800,600);//tell openGL size of rendering window
-   
-    glfwSetFramebufferSizeCallback(window ,framebuffer_size_callback);
-
-
-    //render loop
-
-    while(!glfwWindowShouldClose(window)){
-        //pressing escape to close the window 
-        if (glfwGetKey(window , GLFW_KEY_ESCAPE)==GLFW_PRESS)
-        glfwSetWindowShouldClose(window , true);
-
-      //rendering;
-
-      glClearColor(0.2f,0.3f,0.3f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      //swap buffers and poll events 
-
-      glfwSwapBuffers(window);
-
-      glfwPollEvents();
-
-
-    }
-      
-   glfwTerminate();
-    return 0;
+static void RenderSceneCB(){
     
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glBindBuffer(GL_ARRAY_BUFFER,VBO);
+
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(0,3, GL_FLOAT,GL_FALSE,0,0);
+
+    glDrawArrays(GL_POINTS,0,1);
+
+    glDisableVertexAttribArray(0);
+    
+    glutSwapBuffers();
 }
 
+static void CreateVertexBuffer(){
+      Vector3 Vertices[1];
+      Vertices[0] = Vector3(0.0f, 0.0f,0.0f);
 
+      glGenBuffers(1,&VBO);
+      glBindBuffer(GL_ARRAY_BUFFER, VBO);
+      glBufferData(GL_ARRAY_BUFFER,sizeof(Vertices),Vertices, GL_STATIC_DRAW);
 
+}
+
+int main (int argc , char** argv)
+{
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA);
+
+    int width = 1920;
+    int height = 1080;
+    glutInitWindowSize(width , height);
+
+    int x = 200;
+    int y = 100;
+
+    glutInitWindowPosition(x,y);
+    int win = glutCreateWindow("2nd  Window");
+    printf("window id: %d\n",win);
+    // Must be fone after glut is initialized 
+    GLenum res = glewInit();
+    if (res != GLEW_OK){
+        fprintf(stderr, "error : '%s' \n",glewGetErrorString(res));
+        return 1;
+    }
+
+    GLclampf Red =0.0f, Green =0.0f , Blue =0.0f , Alpha= 0.0f;
+    glClearColor(Red, Green , Blue , Alpha);
+
+    CreateVertexBuffer();
+
+    glutDisplayFunc(RenderSceneCB);//render callback
+
+    glutMainLoop();
+
+    return 0;
+}
