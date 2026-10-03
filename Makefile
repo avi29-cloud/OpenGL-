@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O2 -I.
-LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+LDFLAGS = -lglut -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 
 SRC = main.cpp glad.c
 TARGET = Test

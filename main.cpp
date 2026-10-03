@@ -1,68 +1,41 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <iostream>
+#include <GL/freeglut.h>
+#include <stdio.h>
 
-// Callback function to resize the viewport when the window size changes
-void framebuffer_size_callback(GLFWwindow* window , int width ,int height){
-    glViewport(0,0,width, height);
+static void RenderSceneCB(){
+    static GLclampf c = 1.0f;
+    glClearColor(c*7,c*2,c*4,c);
+
+    c-= 1.0f/256.0f;
+    if (c <=-5.0f){
+        c =0.0f;
+    }
+    glClear(GL_COLOR_BUFFER_BIT);
+    glutPostRedisplay();
+    glutSwapBuffers();
 }
-int main(){
-    if(!glfwInit()){
-        std::cerr <<"failed to Initialize GLFW"<<std::endl;
-        return -1;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR , 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR , 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE ,GLFW_OPENGL_CORE_PROFILE);
 
+int main (int argc , char** argv)
+{
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA);
 
-    //Create window object 
-    GLFWwindow* window = glfwCreateWindow(800,600,"My first OpenGL Window ",NULL,NULL);//parameters
+    int width = 1920;
+    int height = 1080;
+    glutInitWindowSize(width , height);
 
-    if (window == NULL){
-        std::cerr <<"failed to create GLFW window"<<std::endl;
-        glfwTerminate();
-        return -1;
+    int x = 200;
+    int y = 100;
 
-    }    
+    glutInitWindowPosition(x,y);
+    int win = glutCreateWindow("First Window");
+    printf("window id: %d\n",win);
 
-    glfwMakeContextCurrent(window);//create a context of our window
+    GLclampf Red =0.0f, Green =0.0f , Blue =0.0f , Alpha= 0.0f;
+    glClearColor(Red, Green , Blue , Alpha);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-        std::cerr <<"failed to initialize glad"<<std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glViewport(0,0,800,600);//tell openGL size of rendering window
-   
-    glfwSetFramebufferSizeCallback(window ,framebuffer_size_callback);
+    glutDisplayFunc(RenderSceneCB);//render callback
 
+    glutMainLoop();
 
-    //render loop
-
-    while(!glfwWindowShouldClose(window)){
-        //pressing escape to close the window 
-        if (glfwGetKey(window , GLFW_KEY_ESCAPE)==GLFW_PRESS)
-        glfwSetWindowShouldClose(window , true);
-
-      //rendering;
-
-      glClearColor(0.2f,0.3f,0.3f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      //swap buffers and poll events 
-
-      glfwSwapBuffers(window);
-
-      glfwPollEvents();
-
-
-    }
-      
-   glfwTerminate();
     return 0;
-    
 }
-
-
-
