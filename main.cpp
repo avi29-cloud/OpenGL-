@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -16,7 +15,7 @@ static void RenderSceneCB(){
 
     glVertexAttribPointer(0,3, GL_FLOAT,GL_FALSE,0,0);
 
-    glDrawArrays(GL_POINTS,0,1);
+    glDrawArrays(GL_TRIANGLES,0,3);// with this first parameter the gpu now understands every 3 vertices will make a triangle
 
     glDisableVertexAttribArray(0);
     
@@ -24,8 +23,10 @@ static void RenderSceneCB(){
 }
 
 static void CreateVertexBuffer(){
-      Vector3 Vertices[1];
-      Vertices[0] = Vector3(0.0f, 0.0f,0.0f);
+      Vector3 Vertices[3];
+      Vertices[0] = Vector3(-1.0f, -1.0f,0.0f); //bottom left
+      Vertices[1] = Vector3(0.0f,1.0f,0.0f); // top
+      Vertices[2] = Vector3(1.0f, -1.0f,0.0f); //bottom right 
 
       glGenBuffers(1,&VBO);
       glBindBuffer(GL_ARRAY_BUFFER, VBO);
