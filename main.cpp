@@ -4,15 +4,50 @@
 #include <sstream>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include "vector.h"
+#include <vector.h>
 
 GLuint VBO;
+GLint gScaleLocation;
+GLuint gTranslationLocation; 
 const char* pVSFileName="shader.vs";
 const char* pFSFileName="shader.fs";
+
+
+struct Matrix4f { // copied as i didn't have math3d.h
+    float m[4][4];
+    
+    // Constructor to initialize the matrix
+    Matrix4f(float a00, float a01, float a02, float a03,
+             float a10, float a11, float a12, float a13,
+             float a20, float a21, float a22, float a23,
+             float a30, float a31, float a32, float a33) 
+    {
+        m[0][0] = a00; m[0][1] = a01; m[0][2] = a02; m[0][3] = a03;
+        m[1][0] = a10; m[1][1] = a11; m[1][2] = a12; m[1][3] = a13;
+        m[2][0] = a20; m[2][1] = a21; m[2][2] = a22; m[2][3] = a23;
+        m[3][0] = a30; m[3][1] = a31; m[3][2] = a32; m[3][3] = a33;
+    }
+};
 
 static void RenderSceneCB(){
     
     glClear(GL_COLOR_BUFFER_BIT);
+
+   static float Scale =0.0f;
+    static float Delta =0.005f;
+
+    Scale += Delta;
+    if ((Scale>=1.0f)||(Scale<=-1.0f)){
+        Delta*=-1.10f;// small accelerator lol
+    }
+   Matrix4f Translation (1.0f, 0.0f, 0.0f, Scale *2,
+                         0.0f, 1.0f, 0.0f, Scale,
+                         0.0f, 0.0f, 1.0f, 0.0f,
+                         0.0f, 0.0f, 0.0f, 1.0f);
+
+    glUniformMatrix4fv(gTranslationLocation,1,GL_TRUE,&Translation.m[0][0]); //3rd parameter tells if the matrix is row major or column major (true means row major) ,4th parameter is just address of array                   
+
+    glUniform1f(gScaleLocation, Scale);
 
     glBindBuffer(GL_ARRAY_BUFFER,VBO);
 
@@ -23,6 +58,8 @@ static void RenderSceneCB(){
     glDrawArrays(GL_TRIANGLES,0,3);// with this first parameter the gpu now understands every 3 vertices will make a triangle
 
     glDisableVertexAttribArray(0);
+
+    glutPostRedisplay();
     
     glutSwapBuffers();
 }
@@ -94,9 +131,14 @@ static void CompileShaders(){
     glLinkProgram(ShaderProgram);
 
     glGetProgramiv(ShaderProgram,GL_LINK_STATUS,&Success);
-    if (Success =0){
+    if (Success == 0){
         glGetProgramInfoLog(ShaderProgram , sizeof(ErrorLog),NULL,ErrorLog);
         fprintf(stderr,"Error linking Shader program '%s' \n",ErrorLog);
+        exit(1);
+    }
+    gScaleLocation = glGetUniformLocation(ShaderProgram,"gScale");//anywhere after the link is fine ,or else shows error
+    if (gScaleLocation == -1){
+        printf("Error getting uniform location of gScale \n");
         exit(1);
     }
 
@@ -111,6 +153,11 @@ static void CompileShaders(){
     
 
     glUseProgram(ShaderProgram);
+
+    gTranslationLocation = glGetUniformLocation(ShaderProgram,"gTranslation");
+    if (gTranslationLocation ==-1){
+        fprintf(stderr,"uniform gtranslation not found in the shader \n");
+    }
 }
 static void CreateVertexBuffer(){
       Vector3 Vertices[3];
