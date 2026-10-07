@@ -9,6 +9,7 @@
 GLuint VBO;
 GLint gScaleLocation;
 GLuint gTranslationLocation; 
+GLuint gRotationLocation;
 const char* pVSFileName="shader.vs";
 const char* pFSFileName="shader.fs";
 
@@ -33,21 +34,29 @@ static void RenderSceneCB(){
     
     glClear(GL_COLOR_BUFFER_BIT);
 
-   static float Scale =0.0f;
-    static float Delta =0.005f;
+  // static float Scale =0.0f;
+  static float AngleInRadians =0.0f;  
+  static float Delta =0.01f;
 
-    Scale += Delta;
-    if ((Scale>=1.0f)||(Scale<=-1.0f)){
-        Delta*=-1.10f;// small accelerator lol
+    AngleInRadians += Delta;
+    if ((AngleInRadians>=1.5708f)||(AngleInRadians<=-1.5708f)){
+        Delta*=-1.0f;
     }
-   Matrix4f Translation (1.0f, 0.0f, 0.0f, Scale *2,
+
+    Matrix4f Rotation (cosf(AngleInRadians), -sinf(AngleInRadians),   0.0f,0.0f,
+                       sinf(AngleInRadians),   cosf(AngleInRadians),  0.0f,0.0f,
+                        0.0f,                    0.0f,                1.0f,0.0f,
+                        0.0f,                    0.0f,                0.0f,1.0f);
+
+   glUniformMatrix4fv(gRotationLocation, 1 , GL_TRUE, &Rotation.m[0][0]);                     
+  /* Matrix4f Translation (1.0f, 0.0f, 0.0f, Scale *2,
                          0.0f, 1.0f, 0.0f, Scale,
                          0.0f, 0.0f, 1.0f, 0.0f,
                          0.0f, 0.0f, 0.0f, 1.0f);
 
-    glUniformMatrix4fv(gTranslationLocation,1,GL_TRUE,&Translation.m[0][0]); //3rd parameter tells if the matrix is row major or column major (true means row major) ,4th parameter is just address of array                   
+    glUniformMatrix4fv(gTranslationLocation,1,GL_TRUE,&Translation.m[0][0]); //3rd parameter tells if the matrix is row major or column major (true means row major) ,4th parameter is just address of array  */                 
 
-    glUniform1f(gScaleLocation, Scale);
+   // glUniform1f(gScaleLocation, Scale);
 
     glBindBuffer(GL_ARRAY_BUFFER,VBO);
 
@@ -136,11 +145,11 @@ static void CompileShaders(){
         fprintf(stderr,"Error linking Shader program '%s' \n",ErrorLog);
         exit(1);
     }
-    gScaleLocation = glGetUniformLocation(ShaderProgram,"gScale");//anywhere after the link is fine ,or else shows error
+    /*gScaleLocation = glGetUniformLocation(ShaderProgram,"gScale");//anywhere after the link is fine ,or else shows error
     if (gScaleLocation == -1){
         printf("Error getting uniform location of gScale \n");
         exit(1);
-    }
+    }*/
 
     glValidateProgram(ShaderProgram);
         glGetProgramiv(ShaderProgram,GL_VALIDATE_STATUS,&Success);
@@ -154,9 +163,13 @@ static void CompileShaders(){
 
     glUseProgram(ShaderProgram);
 
-    gTranslationLocation = glGetUniformLocation(ShaderProgram,"gTranslation");
+  /*  gTranslationLocation = glGetUniformLocation(ShaderProgram,"gTranslation");
     if (gTranslationLocation ==-1){
         fprintf(stderr,"uniform gtranslation not found in the shader \n");
+    }*/
+    gRotationLocation =glGetUniformLocation(ShaderProgram,"gRotation");
+    if(gRotationLocation ==-1){
+        fprintf(stderr,"uniform gRotation not found in the shader program \n");
     }
 }
 static void CreateVertexBuffer(){
