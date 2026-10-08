@@ -30,15 +30,34 @@ struct Matrix4f { // copied as i didn't have math3d.h
     }
 };
 
+static void ScalingExample(){
+    static float Scale =1.0f;
+    static float Delta =0.01f;
+
+    Scale += Delta;
+    if ((Scale>= 1.5f)||(Scale <=0.5)){
+        Delta *= -1.0f;
+    }
+    Matrix4f Scaling (Scale,0.0f,0.0f,0.0f,
+                      0.0f, Scale,0.0f,0.0f,
+                      0.0f, 0.0f, Scale,0.0f,
+                      0.0f, 0.0f, 0.0f , 1.0f);
+
+   glUniformMatrix4fv(gScaleLocation, 1, GL_TRUE, &Scaling.m[0][0]);                   
+}
+
 static void RenderSceneCB(){
     
     glClear(GL_COLOR_BUFFER_BIT);
 
-  // static float Scale =0.0f;
-  static float AngleInRadians =0.0f;  
-  static float Delta =0.01f;
+    ScalingExample();
 
-    AngleInRadians += Delta;
+
+  // static float Scale =0.0f;
+  //static float AngleInRadians =0.0f;  
+  //static float Delta =0.01f;
+
+  /*  AngleInRadians += Delta;
     if ((AngleInRadians>=1.5708f)||(AngleInRadians<=-1.5708f)){
         Delta*=-1.0f;
     }
@@ -48,7 +67,7 @@ static void RenderSceneCB(){
                         0.0f,                    0.0f,                1.0f,0.0f,
                         0.0f,                    0.0f,                0.0f,1.0f);
 
-   glUniformMatrix4fv(gRotationLocation, 1 , GL_TRUE, &Rotation.m[0][0]);                     
+   glUniformMatrix4fv(gRotationLocation, 1 , GL_TRUE, &Rotation.m[0][0]);/*                     
   /* Matrix4f Translation (1.0f, 0.0f, 0.0f, Scale *2,
                          0.0f, 1.0f, 0.0f, Scale,
                          0.0f, 0.0f, 1.0f, 0.0f,
@@ -64,14 +83,16 @@ static void RenderSceneCB(){
 
     glVertexAttribPointer(0,3, GL_FLOAT,GL_FALSE,0,0);
 
-    glDrawArrays(GL_TRIANGLES,0,3);// with this first parameter the gpu now understands every 3 vertices will make a triangle
-
+    glDrawArrays(GL_TRIANGLE_FAN,0,6);//changed
     glDisableVertexAttribArray(0);
 
     glutPostRedisplay();
     
     glutSwapBuffers();
 }
+
+
+
 
 
 static void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType ){
@@ -166,21 +187,28 @@ static void CompileShaders(){
   /*  gTranslationLocation = glGetUniformLocation(ShaderProgram,"gTranslation");
     if (gTranslationLocation ==-1){
         fprintf(stderr,"uniform gtranslation not found in the shader \n");
-    }*/
+    }
     gRotationLocation =glGetUniformLocation(ShaderProgram,"gRotation");
     if(gRotationLocation ==-1){
         fprintf(stderr,"uniform gRotation not found in the shader program \n");
+    }*/
+    gScaleLocation =glGetUniformLocation(ShaderProgram,"gScaling");
+    if(gRotationLocation ==-1){
+        fprintf(stderr,"uniform gScale not found in the shader program \n");
     }
 }
 static void CreateVertexBuffer(){
-      Vector3 Vertices[3];
+      Vector3 Vertices[6];
       glEnable(GL_CULL_FACE);
-      glFrontFace(GL_CW);
+      glFrontFace(GL_CCW);
       
-      Vertices[0] = Vector3(-1.0f, -1.0f,0.0f); //bottom left
-      Vertices[1] = Vector3(0.0f,1.0f,0.0f); // top
-      Vertices[2] = Vector3(1.0f, -1.0f,0.0f); //bottom right 
-
+      Vertices[0] = Vector3(1.000f,  0.000f, 0.0f);
+      Vertices[1] = Vector3(0.500f,  0.866f, 0.0f);
+      Vertices[2] = Vector3(-0.500f,  0.866f, 0.0f);
+      Vertices[3] = Vector3(-1.000f,  0.000f, 0.0f);
+      Vertices[4] = Vector3(-0.500f, -0.866f, 0.0f);
+      Vertices[5] = Vector3(0.500f, -0.866f, 0.0f);
+      
       glGenBuffers(1,&VBO);
       glBindBuffer(GL_ARRAY_BUFFER, VBO);
       glBufferData(GL_ARRAY_BUFFER,sizeof(Vertices),Vertices, GL_STATIC_DRAW);
