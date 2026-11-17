@@ -1,31 +1,31 @@
 #include<iostream>
-#include <../glad/glad.h>
+#include <glad/glad.h>
 #include<GLFW/glfw3.h>
 #include <math.h>
-#include <string>
-#include <fstream>
-#include <sstream>
+#include "shaderClass.h"
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
+#include <stb/stb_image.h>
+#include "Texture.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "Camera.h"
 
-
-std::string readShaderFile(const char* filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "ERROR: Could not open shader file: " << filePath << std::endl;
-        return "";
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
+const unsigned int width =800;
+const unsigned int height =800;
 
 
 int main()
 {
-    glfwInit();//Initialize GLFW
+    // Initialize GLFW before requesting a window or OpenGL context.
+    glfwInit();
 
 
 // Tell glfw what version of Opengl we are using
     //In this case we are using OpenGl 3.3
+    // Request an OpenGL 3.3 core-profile context.
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
     //Tell Glfw that we are using core profile
@@ -34,26 +34,60 @@ int main()
 
 
     //Vertices coordinates
+    // Store each vertex's position, color, and texture coordinate in one interleaved array.
     GLfloat vertices[]=
-        {
-             -0.5f,-0.5f* float(sqrt(3)) /3,0.0f,
-             0.5f,-0.5f* float(sqrt(3)) /3,0.0f,
-             0.0f, 0.5f* float(sqrt(3)) *2 /3,0.0f,
-             -0.5f/2,0.5f* float(sqrt(3)) /6,0.0f,
-             0.5f/2,0.5f* float(sqrt(3)) /6,0.0f,
-             0.0f, -0.5f* float(sqrt(3)) *2 /3,0.0f
+        {  // coordinates                                       / colors     /TexCoord
+             -0.5f,0.0f,0.5f,                           0.83f,0.70f,0.44f,      0.0f,0.0f,
+             -0.5f,0.0f,-0.5f,                          0.83f,0.70f,0.44f,      5.0f,0.0f,
+             0.5f,0.0f,-0.5f,                           0.83f,0.70f,0.44f,      0.0f,0.0f,
+             0.5f,0.0f,0.5f,                            0.83f,0.70f,0.44f,      5.0f,0.0f,
+             0.0f,0.8f,0.0f,                            0.92f,0.86f,0.76,       2.5f,5.0f
+
         };
 
 
+    // Reuse the four vertices to form the two triangles of a rectangle.
     GLuint indices[] =
     {
-        0,3,5,
-        3,2,4,
-        5,4,1
+        0,1,2,
+        0,2,3,
+        0,1,4,
+        1,2,4,
+        2,3,4,
+        3,0,4
     };
 
+    GLfloat lightVertices[] =
+    { //     COORDINATES     //
+        -0.1f, -0.1f,  0.1f, // 0: Bottom-Front-Left
+        -0.1f, -0.1f, -0.1f, // 1: Bottom-Back-Left
+         0.1f, -0.1f, -0.1f, // 2: Bottom-Back-Right
+         0.1f, -0.1f,  0.1f, // 3: Bottom-Front-Right
+        -0.1f,  0.1f,  0.1f, // 4: Top-Front-Left
+        -0.1f,  0.1f, -0.1f, // 5: Top-Back-Left
+         0.1f,  0.1f, -0.1f, // 6: Top-Back-Right
+         0.1f,  0.1f,  0.1f  // 7: Top-Front-Right
+    };
+
+   GLuint lightIndices[]=
+   {
+       0,1,2,
+       0,2,3,
+       0,1,4,
+       0,7,3,
+       3,7,6,
+       3,6,2,
+       2,6,5,
+       2,5,1,
+       1,5,4,
+       1,4,0,
+       4,5,6,
+       4,6,7
+
+   };
+
 // Create a glfw object of 800 by 800 pixels , naming it OpenGL
-  GLFWwindow* window = glfwCreateWindow(800,800, "OpenGL",NULL,NULL);
+  GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL",NULL,NULL);
 
     // check if the window fails to create
     if (window ==NULL)
@@ -65,106 +99,104 @@ int main()
     // Introduce the window to current context
     glfwMakeContextCurrent(window);
 
-    // load GLAD so it configures OpenGL
+    // Load GLAD after the OpenGL context is current so it can resolve entry points.
     gladLoadGL();
 
     // Specify the viewport of opengl window
-    glViewport(0,0, 800,800);
+    glViewport(0,0, width,height);
+    // Compile the shaders and set up vertex input and GPU buffers.
+    Shader shaderProgram(OPENGL_ASSET_DIR "/Shaders/shader.vs", OPENGL_ASSET_DIR "/Shaders/shader.fs");
+    VAO VAO1;
+    VAO1.Bind();
 
-   //Create vertex and fragment shader object and get reference
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-    // 1. Read the files into std::string
-    std::string vertexCode = readShaderFile("shader.vs");
-    std::string fragmentCode = readShaderFile("shader.fs");
-
-    // 2. Convert std::string to const char* for OpenGL
-    const char* vertexShaderSource = vertexCode.c_str();
-    const char* fragmentShaderSource = fragmentCode.c_str();
-
-    // 3. Pass them to glShaderSource
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
+    VBO VBO1(vertices, sizeof(vertices));
+    EBO EBO1(indices, sizeof(indices));
 
 
-    //Create shader program object and get its reference
-    GLuint shaderProgram =glCreateProgram();
+    // Describe the position, color, and texture-coordinate offsets in each vertex.
+    VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    VAO1.Unbind();
+    VBO1.Unbind();
+    EBO1.Unbind();
 
-    //attach vertex and fragment shader to the shader program
-    glAttachShader(shaderProgram,vertexShader);
-    glAttachShader(shaderProgram,fragmentShader);
+    Shader lightShader(OPENGL_ASSET_DIR "/Shaders/light.vs", OPENGL_ASSET_DIR "/Shaders/light.fs");
 
-    //wrap up / link all shaders together into the shader program
-    glLinkProgram(shaderProgram);
+    VAO lightVAO;
+    lightVAO.Bind();
 
+    VBO lightVBO(lightVertices, sizeof(lightVertices));
+    EBO lightEBO(lightIndices, sizeof(lightIndices));
 
-    //Delete the now useless vertex and fragment shader object
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    lightVAO.LinkAttrib(lightVBO,0,3,GL_FLOAT,3* sizeof(float),(void*)0);
 
+    lightVAO.Unbind();
+    lightVBO.Unbind();
+    lightEBO.Unbind();
 
-    //create refernece containers for the vertex array object and vertex buffer object
-    GLuint VAO,VBO,EBO;
+    glm::vec4 lightColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
-    //generate VAO and VBO with one object each
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1,&EBO);
-  // make the vao the current vertex array object by binding it
-    glBindVertexArray(VAO);
+    glm::vec3 lightPos =glm::vec3(0.5f,0.5f,0.5f);
+    glm::mat4 lightModel = glm::mat4(1.0f);
+    lightModel = glm::translate(lightModel,lightPos);
 
-    //Bind the VBO specifying its a GL_ARRAY_BUFFER
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    //Introduce the vertices into the VBO
-    glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),vertices ,GL_STATIC_DRAW);
+    glm::vec3 pyramidPos =glm::vec3(0.0f,0.0f,0.0f);
+    glm::mat4 pyramidModel = glm::mat4(1.0f);
+    pyramidModel =glm::translate(pyramidModel,pyramidPos);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices),indices,GL_STATIC_DRAW);
-
-    //Configure the vertex attribute so that OpenGL knows how to read the VBO
-    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3* sizeof(float), (void*)0);
-
-    //Enable the vertex attributes so that OpenGL knows to use it
-    glEnableVertexAttribArray(0);
-
-    // bind both so they won't accidentally modify each other
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+    lightShader.Activate();
+    glUniformMatrix4fv(glGetUniformLocation(lightShader.ID,"model"),1,GL_FALSE,glm::value_ptr(lightModel));
+    glUniform4f(glGetUniformLocation(lightShader.ID,"lightColor"),lightColor.x,lightColor.y,lightColor.z,lightColor.w);
+    shaderProgram.Activate();
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID,"model"),1,GL_FALSE,glm::value_ptr(pyramidModel));
+    glUniform4f(glGetUniformLocation(shaderProgram.ID,"lightColor"),1.0f,1.0f,1.0f,1.0f);
 
 
 
+    //Texture
+  Texture piplup(OPENGL_ASSET_DIR "/resource files/Textures/brick.png",GL_TEXTURE_2D,GL_TEXTURE0,GL_RGBA,GL_UNSIGNED_BYTE);
+  piplup.texUnit(shaderProgram,"tex0",0);
 
-    // specify the color of the background
-    glClearColor(0.07f,0.13f,0.17f,1.0f);
+    glEnable(GL_DEPTH_TEST);
 
-    // Clean the back buffer and assign a new color to it
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // swap back buffer with front buffer
-    glfwSwapBuffers(window);
+    Camera camera(width,height,glm::vec3(0.0f,0.0f,2.0f));
     // main while loop
      while (!glfwWindowShouldClose(window))
      {
+         // Clear the frame, activate render resources, and draw the indexed rectangle.
          glClearColor(0.07f,0.13f,0.17f,1.0f);
-         glClear(GL_COLOR_BUFFER_BIT);
-         glUseProgram(shaderProgram);
-         glBindVertexArray(VAO);
-         glDrawElements(GL_TRIANGLES,9,GL_UNSIGNED_INT,0);
+         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+
+        camera.Inputs(window);
+         camera.updateMatrix(45.0f,1.0f,100.0f);
+         shaderProgram.Activate();
+         camera.Matrix(shaderProgram,"camMatrix");
+         piplup.Bind();
+
+
+         VAO1.Bind();
+         glDrawElements(GL_TRIANGLES,sizeof(indices)/sizeof(int),GL_UNSIGNED_INT,0);
+
+         lightShader.Activate();
+         camera.Matrix(lightShader,"camMatrix");
+         lightVAO.Bind();
+         glDrawElements(GL_TRIANGLES,sizeof(lightIndices)/sizeof(int),GL_UNSIGNED_INT,0);
+         // Present the rendered frame before processing the next iteration.
          glfwSwapBuffers(window);
 
          // Take care of all GLFW events
       glfwPollEvents();
      }
 
-    glDeleteVertexArrays(1,&VAO);
-    glDeleteBuffers(1,&VBO);
-    glDeleteBuffers(1,&EBO);
-    glDeleteProgram(shaderProgram);
+    // Release GPU resources before destroying the window and its context.
+    VAO1.Delete();
+    VBO1.Delete();
+    EBO1.Delete();
+    piplup.Delete();
+
+    shaderProgram.Delete();
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

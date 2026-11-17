@@ -1,4 +1,13 @@
-glad/
-KHR/
-glad.c
+/glad/
+/KHR/
+/glad.c
 Test
+# Build output
+/build/
+/cmake-build-*/
+*.o
+*.d
+
+# IDE user-specific files
+.idea/workspace.xml
+.idea/shelf/
